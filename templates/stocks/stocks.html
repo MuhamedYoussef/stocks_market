@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+<section class="container pt-5">
+  <h1 class="text-center">Welcome to Stocks Market</h1>
+  
+  <h3 class="mt-5">Companies</h3>
+  <div id="result" class="mt-5">
+    <div class="text-center">
+      <span class="h5 mr-3">Fetching Data, please wait...</span>
+      <div class="spinner-border text-primary" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal fade" id="stockModal" data-backdrop="static" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document" style="max-width: 85vw;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title name">Modal title</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body" style="min-height: 50vh;">
+          <div class="row">
+            <div class="col">
+              <p class="text-center">Last Refreshed: <span class="lastRefreshed"></span></p>
+            </div>
+            <div class="col">
+              <p class="text-center">Time Zone: <span class="timeZone"></span></p>
+            </div>
+            <div class="col">
+              <p class="text-center">Symbol: <span class="symbol"></span></p>
+            </div>
+          </div>
+
+          <div class="note">
+            <h5>
+              Due to free API key limitations, you need to wait some time before fetching again! Please wait some time and try again.
+              <button type="button" class="btn btn-light" data-dismiss="modal">close</button>
+            </h5>
+          </div>
+
+          <canvas id="myChart" width="400" height="400"></canvas>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-dismiss="modal">Okay</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+{% endblock %}
+
+{% block js %}
+<script>
+  
+  
+  // Fetch data from backend
+  (function fetch_stock_data() {
+    axios.get("{% url 'get_stocks' %}").then(res => {
+
+      // Handle api limitation
+      if (Object.entries(res.data).length === 0 && res.data.constructor === Object) {
+        const content = `
+          <h5>
+            Due to free API key limitations, you need to wait some time before fetching again! Please wait some time and click here to try again 
+            <button class="btn btn-light" onclick="location.reload()">reload</button>
+          </h5>
+        `;
+
+        // Add the data to the UI
+        document.getElementById('result').innerHTML = content;
+        return
+      }
+
+      // Looping through the results and appending it to the result div
+      let content = '';
+      for (symbol in res.data) {
+        const record = res.data[symbol]
+        content += `
+        <div class="record shadow-sm rounded p-4 my-4" onclick="getStockDetails(this)" data-symbol="${symbol}">
+          <p>Company name: <span class="name font-weight-bold">${record['2. name']}</span> (${symbol})</p>
+          <div class="row">
+            <p class="col-3 m-0">Type: ${record['3. type']}</p>
+            <p class="col-3 m-0">Region: ${record['4. region']}</p>
+            <p class="col-3 m-0">Currency: ${record['8. currency']}</p>
+            <p class="col-3 m-0">Match Score: ${record['9. matchScore']}</p>
+          </div>
+        </div>
+        `;
+      }
+
+      // Add the data to the UI
+      document.getElementById('result').innerHTML = content;
+    })
+  })()
+  
+
+  // Get particalr company / symbol details
+  function getStockDetails(element) {
+    const symbol  = element.dataset.symbol;
+    const name = element.querySelector('.name').innerHTML;
+    axios.get(`{% url 'get_stock_detail' %}?symbol=${symbol}`).then(res => showStockDetails(name, symbol, res))
+  }
+
+
+  // Show the stock details with a graph
+  function showStockDetails(name, symbol, res) {
+    const stockModal = document.getElementById('stockModal');
+
+    // Handle api limitation
+    if (Object.keys(res.data).includes('Note') && res.data.Note.includes('5 calls')) {
+      stockModal.querySelector('.note').classList.remove('d-none')
+      $('#stockModal').modal('show');
+      return
+    }
+
+    // Hide the error message
+    stockModal.querySelector('.note').classList.add('d-none')
+
+
+    // Adding some data to the stock modal
+    stockModal.querySelector('.name').innerHTML = name;
+    stockModal.querySelector('.symbol').innerHTML = symbol;
+    stockModal.querySelector('.lastRefreshed').innerHTML = res.data['Meta Data']['3. Last Refreshed'];
+    stockModal.querySelector('.timeZone').innerHTML = res.data['Meta Data']['5. Time Zone'];
+
+    const daily_analysis = res.data['Time Series (Daily)'];
+
+    let open = [];
+    let close = [];
+    let high = [];
+    let low = [];
+
+    for (day in daily_analysis) {
+      open.push(daily_analysis[day]['1. open'])
+      close.push(daily_analysis[day]['4. close'])
+      high.push(daily_analysis[day]['2. high'])
+      low.push(daily_analysis[day]['3. low'])
+    }
+
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var myLineChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: Object.keys(daily_analysis),
+        datasets: [
+          {data: open, label: "Open", borderColor: "#3e95cd", fill: false},
+          {data: close, label: "Close", borderColor: "#8e5ea2", fill: false},
+          {data: high, label: "High", borderColor: "#3cba9f", fill: false},
+          {data: low, label: "Low", borderColor: "#c45850", fill: false}
+        ]
+      },
+        options: {
+          title: {
+            display: true,
+            text: 'World population per region (in millions)'
+          }
+        }
+    });
+
+    
+    $('#stockModal').modal('show');
+  }
+
+
+</script>
+{% endblock %}
