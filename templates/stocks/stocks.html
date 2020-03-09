@@ -15,6 +15,14 @@
     </div>
   </div>
 
+  <div class="loading d-none">
+    <div class="loadingInner text-center">
+      <div class="spinner-border text-primary" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal -->
   <div class="modal fade" id="stockModal" data-backdrop="static" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document" style="max-width: 85vw;">
@@ -104,6 +112,7 @@
 
   // Get particalr company / symbol details
   function getStockDetails(element) {
+    document.querySelector('.loading').classList.remove('d-none'); // Show loading
     const symbol  = element.dataset.symbol;
     const name = element.querySelector('.name').innerHTML;
     axios.get(`{% url 'get_stock_detail' %}?symbol=${symbol}`).then(res => showStockDetails(name, symbol, res))
@@ -165,7 +174,7 @@
         }
     });
 
-    
+    document.querySelector('.loading').classList.add('d-none'); // Hide loading
     $('#stockModal').modal('show');
   }
 
