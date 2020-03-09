@@ -9,14 +9,7 @@ from django.shortcuts import render
 from django.views.generic import TemplateView
 
 
-class Stocks(TemplateView):
-    template_name = 'stocks/stocks.html'
-
-
-
-
 alphabet = list(string.ascii_lowercase)
-
 
 # Due to API limitation, just decided to have multibale api key so we less likely to wait
 API_KEYS_FEATCHING = [
@@ -35,6 +28,10 @@ API_KEYS_DETAILS = [
     'WU3VGNPFA9DU7GNR'
 ]
 
+
+
+class Stocks(TemplateView):
+    template_name = 'stocks/stocks.html'
 
 
 def get_stocks(request):
@@ -65,3 +62,16 @@ def get_stock_detail(request):
     symbol = request.GET['symbol']
     r = requests.get(f'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol={symbol}&apikey={random.choice(API_KEYS_DETAILS)}')
     return JsonResponse(json.loads(r.text), safe=False)
+
+
+
+"""
+    __NOTES__
+
+    As per API docs there weren't any end point that can expose a list of companies for us, so i figured out to search by all the alphabets, ofc waiting for the resposne takes a lot of time so I used threads to send multible requests in the same time, I also tried to seperate the API keys for fetching the companies list from those which just get the detail of a given symbol, It didn't go well for all cases though! BTW if you click on a symbol and it continue to give you the limitation error please try again after 1m.
+
+    I was asked to use DRF and model-based serializer in this test, however I didn't find any reasonable situation where I can make use of them, except if you wanted to save the returned data in the database for some reason!
+
+    Please feel free to contact me for more explanation or details. Thank you)
+
+"""
