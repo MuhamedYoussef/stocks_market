@@ -46,7 +46,7 @@
             </div>
           </div>
 
-          <div class="note">
+          <div class="note mt-5">
             <h5>
               Due to free API key limitations, you need to wait some time before fetching again! Please wait some time and try again.
               <button type="button" class="btn btn-light" data-dismiss="modal">close</button>
@@ -67,7 +67,6 @@
 
 {% block js %}
 <script>
-  
   
   // Fetch data from backend
   (function fetch_stock_data() {
@@ -178,6 +177,6 @@
     $('#stockModal').modal('show');
   }
 
-
+  $('#stockModal').on('hide.bs.modal', () => document.querySelector('.loading').classList.add('d-none')) // Hide loading
 </script>
 {% endblock %}
